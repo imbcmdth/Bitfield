@@ -1,0 +1,34 @@
+// USAGE:
+
+var ActiveDirectory_UserAccessCode = [
+	{
+		"bit":0,
+		"name":"SCRIPT",
+		"description":"Logon script"
+	},
+	{
+		"bit":1,
+		"name":"ACCOUNTDISABLE",
+		"description":"Disabled"
+	},
+	{
+		"bit":3,
+		"name":"HOMEDIR_REQUIRED",
+		"description":"Homedir required"
+	}
+        /* ... ECT. ...  */
+];
+
+var myUAC_code = 0x02; // For example. This would normally come form some API call.
+
+var my_bitfield = new Bitfield(myUAC_code, ActiveDirectory_UserAccessCode);
+
+my_bitfield.value; // Is 2
+
+if ( my_bitfield.has("ACCOUNTDISABLE") ) { 
+	my_bitfield.set("SCRIPT"); 
+}
+
+my_bitfield.value; // Is 3
+
+my_bitfield.debug(); // bit-by-bit breakdown of this.value

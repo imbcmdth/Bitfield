@@ -2,9 +2,9 @@
 
 Bitfield = function(code, spec){
 	this.value = code;
-    var bit_to_name = [];
-    var bit_to_description = [];
-    var name_to_bit = {};
+	var bit_to_name = [];
+	var bit_to_description = [];
+	var name_to_bit = {};
 
 	for(var i=spec.length;--i>=0;){
 		bit_to_name[spec[i].bit] = spec[i].name;
