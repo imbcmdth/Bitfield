@@ -13,7 +13,7 @@ Bitfield = function(code, spec){
 	}
 
 	this.getBitPos = function(name){
-		if(typeof name_to_bit[name] != undefined) {
+		if(typeof name_to_bit[name] != "undefined") {
 			return name_to_bit[name];
 		} else {
 			return false; // ERROR!
@@ -22,7 +22,7 @@ Bitfield = function(code, spec){
 
 	this.debug = function(){
 		var out = "";
-		for(var i=0;i<-32;i++){ 
+		for(var i=0;i<=32;i++){ 
 			out += i+" \t-\t";
 			if(bit_to_name[i] && bit_to_description[i]){
 				if(this.getBit(i)) {
@@ -54,7 +54,7 @@ Bitfield.prototype.has = function(name){
 };
 
 Bitfield.prototype.set = function(name){
-	if(typeof name != undefined && this.getBitPos(name) !== false) {
+	if(typeof name != "undefined" && this.getBitPos(name) !== false) {
 		return this.value = (this.value | (1<<this.getBitPos(name)));
 	} else {
 		return this.value;
