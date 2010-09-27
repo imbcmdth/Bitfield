@@ -1,3 +1,4 @@
+
 // USAGE:
 
 var ActiveDirectory_UserAccessCode = [
@@ -21,14 +22,10 @@ var ActiveDirectory_UserAccessCode = [
 
 var myUAC_code = 0x02; // For example. This would normally come form some API call.
 
-var my_bitfield = new Bitfield(myUAC_code, ActiveDirectory_UserAccessCode);
-
-my_bitfield.value; // Is 2
+var my_bitfield = new Bitfield(ActiveDirectory_UserAccessCode, myUAC_code);
 
 if ( my_bitfield.has("ACCOUNTDISABLE") ) { 
 	my_bitfield.set("SCRIPT"); 
 }
 
-my_bitfield.value; // Is 3
-
-my_bitfield.debug(); // bit-by-bit breakdown of this.value
+my_bitfield; // Is 3
