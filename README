@@ -58,7 +58,7 @@ code_2.has("SCRIPT");  /*=> false */
 code_2.has("ACCOUNT"); /*=> false */
 code_2.has("HOMEDIR"); /*=> true */
 
-code_1.clear("ACCOUNT"); /*=> 0 */ 
+code_1.unset("ACCOUNT"); /*=> 0 */ 
 code_1.set("SCRIPT");  /*=> 1 */
 
 code_2.set("ACCOUNT");  /*=> 26 */
