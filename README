@@ -1,31 +1,81 @@
+/*************************************************
+This library is a set of Bit-Field or Bit-Flag 
+helper. The library has several features that make 
+it extremely convient to use. The maximum width of
+a bit-field is currently 32-bits.
 
-// USAGE:
+The library has this signature:
+  Bitfield( bit_field_specification, initial_value = 0, ignore_unspecified_bits = false)
 
-var ActiveDirectory_UserAccessCode = [
+Where:
+  bit_field_specification:  an array of objects 
+    specifying each bit and name (description is 
+    optional.)
+
+  initial_value:  a number. defaults to 0.
+
+  ignore_unspecified_bits: if true the bitfield 
+    will not change the value of any unspecified 
+    bits (holes) in the bit_field_specification. 
+    otherwise, unspecified bits are forced to 0.
+*************************************************/
+
+/** USAGE: **/
+
+var bit_field_spec = [
 	{
 		"bit":0,
 		"name":"SCRIPT",
-		"description":"Logon script"
+		"description":"Bit zero is set!"
 	},
 	{
 		"bit":1,
-		"name":"ACCOUNTDISABLE",
-		"description":"Disabled"
+		"name":"ACCOUNT",
+		"description":"Bit 1 here."
 	},
+	/*  "bit": 2, is unspecified so it is a 'hole' */
 	{
 		"bit":3,
-		"name":"HOMEDIR_REQUIRED",
-		"description":"Homedir required"
+		"name":"HOMEDIR",
+		"description":"A description."
 	}
-        /* ... ECT. ...  */
+    /* ... ECT. ...  */
 ];
 
-var myUAC_code = 0x02; // For example. This would normally come form some API call.
 
-var my_bitfield = new Bitfield(ActiveDirectory_UserAccessCode, myUAC_code);
+var code_1 = new Bitfield(bit_field_spec, 18); /** These values would normally come from some type of API. **/
+var code_2 = new Bitfield(bit_field_spec, 24, true);
 
-if ( my_bitfield.has("ACCOUNTDISABLE") ) { 
-	my_bitfield.set("SCRIPT"); 
-}
+code_1; /*=> 2 */
+code_2; /*=> 24 */
 
-my_bitfield; // Is 3
+code_1.has("SCRIPT");  /*=> false */
+code_1.has("ACCOUNT"); /*=> true */
+code_1.has("HOMEDIR"); /*=> false */
+
+
+code_2.has("SCRIPT");  /*=> false */
+code_2.has("ACCOUNT"); /*=> false */
+code_2.has("HOMEDIR"); /*=> true */
+
+code_1.clear("ACCOUNT"); /*=> 0 */ 
+code_1.set("SCRIPT");  /*=> 1 */
+
+code_2.set("ACCOUNT");  /*=> 26 */
+
+/** Bitfield has both valueOf() and toString(). You can use a bitfield like any other value: **/
+
+"Code is: " + code_1; /*=> Code is: 3 */
+
+var code = 0;
+
+code = code_1 | code_2;
+
+code;  /*=> 27 */
+
+code_1.has("HOMEDIR");  /*=> false */
+
+/** BUT **/
+
+code_1.has.call(code, "HOMEDIR");  /*=> true */
+
