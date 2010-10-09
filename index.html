@@ -157,9 +157,9 @@
 		// Better random bits
 		var val = (function(){
 			var val = 0;
-			for(var r = 0; r < 32; r++) { // 33 Interactions...
+			for(var r = 0; r < 32; r++) { // 32 Interactions...
 				for(var i = 0; i < 32; i++) { // Over each bit...
-					val ^= (Math.random()*2|0)<<i; // XORing as we go.
+					val ^= (Math.random()*2|0)<<r; // XORing as we go.
 				}
 			}
 			return val;
