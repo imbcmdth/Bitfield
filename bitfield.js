@@ -7,14 +7,24 @@
 //  new Bitfield(bitfield, specification);
 //  new Bitfield(bitfield, specification, unknown_bits_flag);
 
-var isArray = function(o) {
-	return Object.prototype.toString.call(o) === '[object Array]'; 
-};
 
 Bitfield = function(configuration, bit_field, ignore_unknown_bits){
-	var inner_value = 0;
 
-	/* Move settings around because we allow a 'flexible' call style. */
+	/* Initialize most scope-wide variables. */
+	var inner_value = null;
+	var inner_mask = 0;
+	var null_mask = 0xFFFFFFFF;
+	var bit_to_name = [];
+	var bit_to_description = [];
+	var name_to_bit = {};
+	var number_of_bits = 0;
+	var isArray = function(o) {
+		return Object.prototype.toString.call(o) === '[object Array]'; 
+	};
+
+
+	/* Move settings around if needed.
+	   We do this because we allow a 'flexible' call style. */
 	if (typeof configuration === "number") {
 		inner_value = configuration;
 		if (isArray(bit_field)) {
@@ -26,34 +36,36 @@ Bitfield = function(configuration, bit_field, ignore_unknown_bits){
 		ignore_unknown_bits = bit_field;
 	}
 
-	/* By now, if configuration isn't an array of objects, something is very wrong. */
-	if (!isArray(configuration)) {
+	/* By now, if configuration isn't an array of objects, something is very wrong. 
+	   So I throw my hands in the air like I just don't care.
+	*/
+	if (!isArray(configuration) || configuration.length < 1) {
 		throw "No proper bit-field specification found!"
 	}
 
 	/* Initialize the remaining scope-wide variables. */
-	var inner_mask = 0;
-	var null_mask = 0xFFFFFFFF;
-	var bit_to_name = [];
-	var bit_to_description = [];
-	var name_to_bit = {};
 	var allow_other_bits = ignore_unknown_bits || false;
-	var number_of_bits = 0;
 	
-	/* A new scope, just to contain index. */
+	/* A temporary scope, just to contain "index". */
 	(function(){
 		var index = configuration.length;
+		var curbit = 0;
 		while (--index >= 0) {
-			if(configuration[index].bit+1 > number_of_bits) number_of_bits = configuration[index].bit+1;
-			bit_to_name[configuration[index].bit] = configuration[index].name;
-			bit_to_description[configuration[index].bit] = configuration[index].description;
-			name_to_bit[configuration[index].name] = configuration[index].bit;
-			inner_mask |= (1<<configuration[index].bit);
+			curbit = configuration[index].bit;
+			if (curbit+1 > number_of_bits) {
+				number_of_bits = curbit+1;
+			}
+			bit_to_name[curbit] = configuration[index].name;
+			bit_to_description[curbit] = configuration[index].description;
+			name_to_bit[configuration[index].name] = curbit;
+			inner_mask |= (1<<curbit);
 		}
 	}());
 
 	/* If allow_other_bits is not set, we only allow 1's in bits that are in mentioned in the configuration. */
-	inner_value &= (allow_other_bits ? null_mask : inner_mask); 
+	if(inner_value !== null){
+		inner_value &= (allow_other_bits ? null_mask : inner_mask); 
+	}
 
 	var _getSize = function() {
 		return number_of_bits;
@@ -86,104 +98,145 @@ Bitfield = function(configuration, bit_field, ignore_unknown_bits){
 	};
 
 	var _getBit = function(bit) {
-		if (bit !== false && bit >= 0 && bit < _getSize()) {
-			return ( (allow_other_bits ? null_mask : inner_mask) & this.valueOf() & (1<<bit) ) != 0;
-		} else {
-			return false;
+		if (this && bit !== false && bit >= 0 && bit < _getSize()) {
+			return ((allow_other_bits ? null_mask : inner_mask) & (this.valueOf() & (1<<bit)))?this:false;
 		}
+		return false;
 	};
-	var _doIt = function(name, op){
-		var bit = 1<<_getBitFromName(name);
+
+	var _doIt = function(op, name){
 		var new_value = this.valueOf();
-		if (typeof name != "undefined" && _getBitFromName(name) !== false) {
-
-			switch(op){
-				case 'set':
-					new_value |= bit;
-					break;
-				case 'clear':
-					new_value &= ~bit;
-					break;
-				case 'toggle':
-					new_value ^= bit;
-					break;
-			};
-			new_value &= (allow_other_bits ? null_mask : inner_mask);
-
-			if (this['setValueOf']) { 
-				this.setValueOf(new_value); 
-			}
-			return new_value;
-		} else {
-			return false;
-		}		
-	}
-	/* We have a valueOf function so that this object can act just like a regular number. */
-	this.valueOf = function() {
-		return inner_value.valueOf();
-	};
-	
-	/* This toString allows to specify a length to pad to. 
-	   Any number shorter than length will be prefixed by enough zeros to reach length. */
-	this.toString = function(base, length) {
-		base = base || 10;
-		length = length || _getSize();
-		var str = inner_value.toString(base);
-		if (base === 2) {
-			for (var i = length - str.length; i > 0; i--)
-				str = "0" + str;
+		var bit = 0;
+		var i = 0;
+		if (arguments.length > 2) {
+			name = Array.prototype.slice.call(arguments, 1);
+		} 
+		if (!isArray(name)) {
+			name = [name];
 		}
-		return str;
+		i = name.length;
+		while (--i>=0) {
+			if (typeof name[i] != "undefined" && _getBitFromName(name[i]) !== false) {
+				bit = 1<<_getBitFromName(name[i]);
+				switch (op) {
+					case 'set':
+						new_value |= bit;
+						break;
+					case 'clear':
+						new_value &= ~bit;
+						break;
+					case 'toggle':
+						new_value ^= bit;
+						break;
+				}
+				new_value &= (allow_other_bits ? null_mask : inner_mask);
+			}
+		}
+		return new_value;
 	};
 
-	/* Just a helper function. */
-	this.setValueOf = function(val) {
-		var old_val = inner_value;
-		if (val) inner_value = val;
-		return old_val;
-	};
-
-	this.has = this.isset = function(name) {
-			return _getBit.call(this, _getBitFromName(name));
-	};
-
-	this.set = function(name) {
-		return _doIt.call(this, name, 'set');
-	};
-
-	this.unset = function(name) {
-		return _doIt.call(this, name, 'clear');
-	};
-
-	this.toggle = function(name) {
-		return _doIt.call(this, name, 'toggle');
-	};
-
-	this.each = function(fun, show_all){
+	var _each = function(fun, show_all){
 		var show_all_bits = show_all || allow_other_bits || false;
 		for (var i=0;i< (show_all_bits?32:_getSize());i++){ 
 			if (show_all_bits || _getNameFromBit(i)) {
-				fun.call(this, i, _getBit.call(this, i));
+				fun.call(this, i, _getBit.call(this.valueOf(), i));
 			}
 		}
 	};
 
-	this.debug = function() {
-		var out = "";
-		var callback = function(bit, value) { 
-			out += bit+" \t-\t";
-			if (_getNameFromBit(bit)){
-				if (value) {
-					out += "1\t-\t"+_getNameFromBit(bit)+"\t-\t"+_getDescriptionFromBit(bit);
-				} else {
-					out += "0\t-\t"+_getNameFromBit(bit)+"\t-\t"+_getDescriptionFromBit(bit);
-				}
-			} else {
-					out += "N/A";
-			}
-			out += "\n";
+	// This is the inner object that is either returned or evaluated
+	var BITFIELD = function(bit_field){
+		bit_field &= (allow_other_bits ? null_mask : inner_mask); 
+		bit_field = new Number(bit_field || 0);
+
+		bit_field.oldValueOf = bit_field.valueOf;
+		bit_field.valueOf = function() {
+			return bit_field.oldValueOf()+0;
 		};
-		this.each.call(this, callback, true);
-		return out;
+
+		/* This toString allows to specify a length to pad to. 
+		   Any number shorter than length will be prefixed by enough zeros to reach length. */
+		bit_field.oldToString = bit_field.toString;
+		bit_field.toString = function(base, length) {
+			base = base || 10;
+			length = length || _getSize();
+			var str = bit_field.oldToString.call(bit_field, base);
+			if (base === 2) {
+				for (var i = length - str.length; i > 0; i--)
+					str = "0" + str;
+			}
+			return str;
+		};
+
+
+		bit_field.has = bit_field.isSet = function(name) {
+			if(arguments.length > 1){
+				name = Array.prototype.slice.call(arguments);
+			}
+			if(isArray(name)){
+				var i = name.length;
+				var local_bitfield = bit_field;
+				while(--i>=0){
+					local_bitfield = _getBit.call(local_bitfield, _getBitFromName(name[i]));
+				}
+				return local_bitfield? true : false;
+			} else {
+				return _getBit.call(bit_field, _getBitFromName(name))?true:false;
+			}
+		};
+
+		bit_field.set = function(name) {
+			var args = isArray(name)?name:Array.prototype.slice.call(arguments);
+			return BITFIELD(_doIt.call(bit_field, 'set', args));
+		};
+
+		bit_field.unset = function(name) {
+			var args = isArray(name)?name:Array.prototype.slice.call(arguments);
+			return BITFIELD(_doIt.call(bit_field, 'clear', args));
+		};
+
+		bit_field.toggle = function(name) {
+			var args = isArray(name)?name:Array.prototype.slice.call(arguments);
+			return BITFIELD(_doIt.call(bit_field, 'toggle', args));
+		};
+
+		bit_field.each = function(fun, show_all){
+			_each.call(bit_field, fun, show_all);
+		};
+
+		bit_field.name = function(bit){
+			return _getNameFromBit(bit);
+		};
+
+		bit_field.description = function(bit){
+			return _getDescriptionFromBit(bit);
+		};
+
+		bit_field.debug = function() {
+			var out = "";
+			var callback = function(bit, value) { 
+				out += bit+" \t-\t";
+				if (this.name(bit)){
+					if (value) {
+						out += "1\t-\t"+this.name(bit)+"\t-\t"+this.description(bit);
+					} else {
+						out += "0\t-\t"+this.name(bit)+"\t-\t"+this.description(bit);
+					}
+				} else {
+						out += "N/A";
+				}
+				out += "\n";
+			};
+			bit_field.each(callback, true);
+			return out;
+		};
+
+		// Finally, return the decorated Number();
+		return bit_field;
 	};
+
+	if(inner_value !== null)
+		return BITFIELD(inner_value);
+	else
+		return BITFIELD;
 };

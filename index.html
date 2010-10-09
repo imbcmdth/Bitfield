@@ -1,0 +1,231 @@
+<html>
+<head>
+<title>Example of the Bitfield helper with a UserAccountControl specification.</title>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script> 
+<script type="text/javascript" src="bitfield.js"></script>
+<script>
+	var bit_field_spec = [
+		{
+			"bit":0,
+			"name":"SCRIPT",
+			"description":"The logon script will be run."
+		},
+		{
+			"bit":1,
+			"name":"ACCOUNTDISABLE",
+			"description":"The user account is disabled."
+		},
+		/*  "bit": 2, is unspecified so it is a 'hole' */
+		{
+			"bit":3,
+			"name":"HOMEDIR_REQUIRED",
+			"description":"The home folder is required."
+		},
+		{
+			"bit":4,
+			"name":"LOCKOUT",
+			"description":"The account is locked."
+		},
+		{
+			"bit":5,
+			"name":"PASSWD_NOTREQD",
+			"description":"No password is required."
+		},
+		{
+			"bit":6,
+			"name":"PASSWD_CANT_CHANGE",
+			"description":"The user cannot change the password."
+		},
+		{
+			"bit":7,
+			"name":"ENCRYPTED_TEXT_PWD_ALLOWED",
+			"description":"The user can send an encrypted password."
+		},
+		{
+			"bit":8,
+			"name":"TEMP_DUPLICATE_ACCOUNT",
+			"description":"This is an account for users whose primary account is in another domain."
+		},
+		{
+			"bit":9,
+			"name":"NORMAL_ACCOUNT",
+			"description":"This is a default account type that represents a typical user."
+		},
+		/*  "bit": 10, is unspecified so it is a 'hole' */
+		{
+			"bit":11,
+			"name":"INTERDOMAIN_TRUST_ACCOUNT",
+			"description":"This is a permit to trust an account for a system domain that trusts other domains."
+		},
+		{
+			"bit":12,
+			"name":"WORKSTATION_TRUST_ACCOUNT",
+			"description":"This is a computer account for a computer that is running Microsoft Windows NT 4.0 Workstation, Microsoft Windows NT 4.0 Server, Microsoft Windows 2000 Professional, or Windows 2000 Server and is a member of this domain."
+		},
+		{
+			"bit":13,
+			"name":"SERVER_TRUST_ACCOUNT",
+			"description":"This is a computer account for a domain controller that is a member of this domain."
+		},
+		/*  "bit": 14, is unspecified so it is a 'hole' */
+		/*  "bit": 15, is unspecified so it is a 'hole' */
+		{
+			"bit":16,
+			"name":"DONT_EXPIRE_PASSWORD",
+			"description":"Represents the password, which should never expire on the account."
+		},
+		{
+			"bit":17,
+			"name":"MNS_LOGON_ACCOUNT",
+			"description":"This is an MNS logon account."
+		},
+		{
+			"bit":18,
+			"name":"SMARTCARD_REQUIRED",
+			"description":"When this flag is set, it forces the user to log on by using a smart card."
+		},
+		{
+			"bit":19,
+			"name":"TRUSTED_FOR_DELEGATION",
+			"description":"When this flag is set, the service account (the user or computer account) under which a service runs is trusted for Kerberos delegation."
+		},
+		{
+			"bit":20,
+			"name":"NOT_DELEGATED",
+			"description":"When this flag is set, the security context of the user is not delegated to a service even if the service account is set as trusted for Kerberos delegation."
+		},
+		{
+			"bit":21,
+			"name":"USE_DES_KEY_ONLY",
+			"description":"(Windows 2000/Windows Server 2003) Restrict this principal to use only Data Encryption Standard (DES) encryption types for keys."
+		},
+		{
+			"bit":22,
+			"name":"DONT_REQ_PREAUTH",
+			"description":"(Windows 2000/Windows Server 2003) This account does not require Kerberos pre-authentication for logging on."
+		},
+		{
+			"bit":23,
+			"name":"PASSWORD_EXPIRED",
+			"description":"(Windows 2000/Windows Server 2003) The user's password has expired."
+		},
+		{
+			"bit":24,
+			"name":"TRUSTED_TO_AUTH_FOR_DELEGATION",
+			"description":"(Windows 2000/Windows Server 2003) The account is enabled for delegation."
+		}
+	];
+
+	var makeTable = function(bitfield){
+		// Start with the table and header
+		var output = "<table><tr><th>Bit</th><th>Value</th><th>Name</th><th>Description</th>";
+		
+		// Inside the callback:
+		//   "this" is equal to the decorated Number(). 
+		//   "bit" is the ordinal position of the bit.
+		//   "value" is a boolean representing if the bit is set (true) or not (false)
+		var makeTableHTML = function(bit, value) { 
+			// Start the row
+			output += "<tr><td>"+bit+"</td>";
+			
+			// If there is a name for this bit, then it was specified
+			if (this.name(bit)){
+				
+				if (value) {
+					output += '<td><input type="checkbox" class="bit_box" id="'+this.name(bit)+'" checked="checked"/></td><td>'+this.name(bit)+"</td><td>"+this.description(bit)+"</td>";
+				} else {
+					output += '<td><input type="checkbox" class="bit_box" id="'+this.name(bit)+'"/></td><td>'+this.name(bit)+"</td><td>"+this.description(bit)+"</td>";
+				}
+			} else {
+				// A non-specified bit
+				output += '<td colspan="3">N/A</td>';
+			}
+
+			// Close the row
+			output += "</tr>";
+		};
+		
+		// iterate over each bit. the second argument means we will iterate over all 32 possible bits
+		bitfield.each(makeTableHTML, true);
+		
+		// Close the table
+		output += "</table>";
+		return output;
+	};
+	
+	$(function(){
+		// Better random bits
+		var val = (function(){
+			var val = 0;
+			for(var r = 0; r < 32; r++) { // 33 Interactions...
+				for(var i = 0; i < 32; i++) { // Over each bit...
+					val ^= (Math.random()*2|0)<<i; // XORing as we go.
+				}
+			}
+			return val;
+		})();
+
+		// Initialize the api key to some random value
+		$('#bit_input').val(val);
+
+		// Build the Bitfield object
+		var theField = Bitfield(bit_field_spec);
+
+		var drawTable = function() {
+			// TODO: Support hex input
+			var value = parseFloat($('#bit_input').val());
+
+			// Construct a decorated Number object from a Number or a primitive value
+			var bitfield = theField(value);
+
+			$('#bit_debug').html(makeTable(bitfield));
+
+			// By updating the input's value, we force the value to always have unknown bits set to 0
+			$('#bit_input').val(bitfield);
+		};
+		
+		
+		var updateInput = function(){
+			// Fetch bit's name
+			var bit = this.id;
+
+			// TODO: Support hex input
+			var value = parseFloat($('#bit_input').val());
+
+			// Construct a decorated Number object from a Number or a primitive value
+			var bitfield = theField(value);
+
+			// Yeah, that simple!
+			bitfield = bitfield.toggle(bit);
+
+			$('#bit_input').val(bitfield);
+		};
+
+		$('#bit_update').click(drawTable);
+		$('.bit_box').live('click', updateInput);
+
+		// Force the table to be drawn during initialization
+		drawTable();
+	});
+</script>
+<style>
+	table {
+		padding:0px;
+		margin:0px;
+		border-collapse:collapse;
+	}
+	table td{
+		border-top:1px solid lightgrey;
+	}
+</style>
+</head>
+<body>
+<b>API Value:</b>
+<div>
+	<input type="text" id="bit_input" value="0"/><input type="button" id="bit_update" value="Update" />
+</div>
+<br/>
+<div id="bit_debug">
+</div>
+</body>
+</html>
