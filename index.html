@@ -4,118 +4,6 @@
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script> 
 <script type="text/javascript" src="bitfield.js"></script>
 <script>
-	var bit_field_spec = [
-		{
-			"bit":0,
-			"name":"SCRIPT",
-			"description":"The logon script will be run."
-		},
-		{
-			"bit":1,
-			"name":"ACCOUNTDISABLE",
-			"description":"The user account is disabled."
-		},
-		/*  "bit": 2, is unspecified so it is a 'hole' */
-		{
-			"bit":3,
-			"name":"HOMEDIR_REQUIRED",
-			"description":"The home folder is required."
-		},
-		{
-			"bit":4,
-			"name":"LOCKOUT",
-			"description":"The account is locked."
-		},
-		{
-			"bit":5,
-			"name":"PASSWD_NOTREQD",
-			"description":"No password is required."
-		},
-		{
-			"bit":6,
-			"name":"PASSWD_CANT_CHANGE",
-			"description":"The user cannot change the password."
-		},
-		{
-			"bit":7,
-			"name":"ENCRYPTED_TEXT_PWD_ALLOWED",
-			"description":"The user can send an encrypted password."
-		},
-		{
-			"bit":8,
-			"name":"TEMP_DUPLICATE_ACCOUNT",
-			"description":"This is an account for users whose primary account is in another domain."
-		},
-		{
-			"bit":9,
-			"name":"NORMAL_ACCOUNT",
-			"description":"This is a default account type that represents a typical user."
-		},
-		/*  "bit": 10, is unspecified so it is a 'hole' */
-		{
-			"bit":11,
-			"name":"INTERDOMAIN_TRUST_ACCOUNT",
-			"description":"This is a permit to trust an account for a system domain that trusts other domains."
-		},
-		{
-			"bit":12,
-			"name":"WORKSTATION_TRUST_ACCOUNT",
-			"description":"This is a computer account for a computer that is running Microsoft Windows NT 4.0 Workstation, Microsoft Windows NT 4.0 Server, Microsoft Windows 2000 Professional, or Windows 2000 Server and is a member of this domain."
-		},
-		{
-			"bit":13,
-			"name":"SERVER_TRUST_ACCOUNT",
-			"description":"This is a computer account for a domain controller that is a member of this domain."
-		},
-		/*  "bit": 14, is unspecified so it is a 'hole' */
-		/*  "bit": 15, is unspecified so it is a 'hole' */
-		{
-			"bit":16,
-			"name":"DONT_EXPIRE_PASSWORD",
-			"description":"Represents the password, which should never expire on the account."
-		},
-		{
-			"bit":17,
-			"name":"MNS_LOGON_ACCOUNT",
-			"description":"This is an MNS logon account."
-		},
-		{
-			"bit":18,
-			"name":"SMARTCARD_REQUIRED",
-			"description":"When this flag is set, it forces the user to log on by using a smart card."
-		},
-		{
-			"bit":19,
-			"name":"TRUSTED_FOR_DELEGATION",
-			"description":"When this flag is set, the service account (the user or computer account) under which a service runs is trusted for Kerberos delegation."
-		},
-		{
-			"bit":20,
-			"name":"NOT_DELEGATED",
-			"description":"When this flag is set, the security context of the user is not delegated to a service even if the service account is set as trusted for Kerberos delegation."
-		},
-		{
-			"bit":21,
-			"name":"USE_DES_KEY_ONLY",
-			"description":"(Windows 2000/Windows Server 2003) Restrict this principal to use only Data Encryption Standard (DES) encryption types for keys."
-		},
-		{
-			"bit":22,
-			"name":"DONT_REQ_PREAUTH",
-			"description":"(Windows 2000/Windows Server 2003) This account does not require Kerberos pre-authentication for logging on."
-		},
-		{
-			"bit":23,
-			"name":"PASSWORD_EXPIRED",
-			"description":"(Windows 2000/Windows Server 2003) The user's password has expired."
-		},
-		{
-			"bit":24,
-			"name":"TRUSTED_TO_AUTH_FOR_DELEGATION",
-			"description":"(Windows 2000/Windows Server 2003) The account is enabled for delegation."
-		}
-	];
-
 	var makeTable = function(bitfield){
 		// Start with the table and header
 		var output = "<table><tr><th>Bit</th><th>Value</th><th>Name</th><th>Description</th>";
@@ -152,8 +40,10 @@
 		output += "</table>";
 		return output;
 	};
-	
-	$(function(){
+
+	var INIT = function(){
+		eval( "var bit_field_spec = "+$("#bit_spec").val());
+
 		// Better random bits
 		var val = (function(){
 			var val = 0;
@@ -182,6 +72,11 @@
 
 			// By updating the input's value, we force the value to always have unknown bits set to 0
 			$('#bit_input').val(bitfield);
+			$('#bit_hex').text("0x"+bitfield.toString(16, 8).toUpperCase());
+			$('#bit_binary').text(bitfield.toString(2, 32));
+			$('#bit_has').text(bitfield.has("SCRIPT", "ACCOUNTDISABLE"));
+			$('#bit_none').text(bitfield.none("SCRIPT", "ACCOUNTDISABLE"));
+			$('#bit_only').text(bitfield.only("SCRIPT", "ACCOUNTDISABLE"));
 		};
 		
 		
@@ -199,14 +94,25 @@
 			bitfield = bitfield.toggle(bit);
 
 			$('#bit_input').val(bitfield);
+			$('#bit_hex').text("0x"+bitfield.toString(16, 8).toUpperCase());
+			$('#bit_binary').text(bitfield.toString(2, 32));
+			$('#bit_has').text(bitfield.has("SCRIPT", "ACCOUNTDISABLE"));
+			$('#bit_none').text(bitfield.none("SCRIPT", "ACCOUNTDISABLE"));
+			$('#bit_only').text(bitfield.only("SCRIPT", "ACCOUNTDISABLE"));
 		};
-
-		$('#bit_update').click(drawTable);
-		$('.bit_box').live('click', updateInput);
 
 		// Force the table to be drawn during initialization
 		drawTable();
+		$('#bit_update').unbind('click').click(drawTable);
+		$('.bit_box').die('click').live('click', updateInput);
+
+	};
+	
+	$(function(){
+		INIT();
+		$('#spec_apply').click(INIT);
 	});
+
 </script>
 <style>
 	table {
@@ -220,11 +126,141 @@
 </style>
 </head>
 <body>
-<b>API Value:</b>
-<div>
-	<input type="text" id="bit_input" value="0"/><input type="button" id="bit_update" value="Update" />
-</div>
-<br/>
+<h1>The massively over-engineered JavaScript Bitfield class</h1>
+<p>var <b>bit_field_spec</b> = </p>
+<textarea cols="80" rows="20" id="bit_spec">
+[
+	{
+		"bit":0,
+		"name":"SCRIPT",
+		"description":"The logon script will be run."
+	},
+	{
+		"bit":1,
+		"name":"ACCOUNTDISABLE",
+		"description":"The user account is disabled."
+	},
+	/*  "bit": 2, is unspecified so it is a 'hole' */
+	{
+		"bit":3,
+		"name":"HOMEDIR_REQUIRED",
+		"description":"The home folder is required."
+	},
+	{
+		"bit":4,
+		"name":"LOCKOUT",
+		"description":"The account is locked."
+	},
+	{
+		"bit":5,
+		"name":"PASSWD_NOTREQD",
+		"description":"No password is required."
+	},
+	{
+		"bit":6,
+		"name":"PASSWD_CANT_CHANGE",
+		"description":"The user cannot change the password."
+	},
+	{
+		"bit":7,
+		"name":"ENCRYPTED_TEXT_PWD_ALLOWED",
+		"description":"The user can send an encrypted password."
+	},
+	{
+		"bit":8,
+		"name":"TEMP_DUPLICATE_ACCOUNT",
+		"description":"This is an account for users whose primary account is in another domain."
+	},
+	{
+		"bit":9,
+		"name":"NORMAL_ACCOUNT",
+		"description":"This is a default account type that represents a typical user."
+	},
+	/*  "bit": 10, is unspecified so it is a 'hole' */
+	{
+		"bit":11,
+		"name":"INTERDOMAIN_TRUST_ACCOUNT",
+		"description":"This is a permit to trust an account for a system domain that trusts other domains."
+	},
+	{
+		"bit":12,
+		"name":"WORKSTATION_TRUST_ACCOUNT",
+		"description":"This is a computer account for a computer that is running Microsoft Windows NT 4.0 Workstation, Microsoft Windows NT 4.0 Server, Microsoft Windows 2000 Professional, or Windows 2000 Server and is a member of this domain."
+	},
+	{
+		"bit":13,
+		"name":"SERVER_TRUST_ACCOUNT",
+		"description":"This is a computer account for a domain controller that is a member of this domain."
+	},
+	/*  "bit": 14, is unspecified so it is a 'hole' */
+	/*  "bit": 15, is unspecified so it is a 'hole' */
+	{
+		"bit":16,
+		"name":"DONT_EXPIRE_PASSWORD",
+		"description":"Represents the password, which should never expire on the account."
+	},
+	{
+		"bit":17,
+		"name":"MNS_LOGON_ACCOUNT",
+		"description":"This is an MNS logon account."
+	},
+	{
+		"bit":18,
+		"name":"SMARTCARD_REQUIRED",
+		"description":"When this flag is set, it forces the user to log on by using a smart card."
+	},
+	{
+		"bit":19,
+		"name":"TRUSTED_FOR_DELEGATION",
+		"description":"When this flag is set, the service account (the user or computer account) under which a service runs is trusted for Kerberos delegation."
+	},
+	{
+		"bit":20,
+		"name":"NOT_DELEGATED",
+		"description":"When this flag is set, the security context of the user is not delegated to a service even if the service account is set as trusted for Kerberos delegation."
+	},
+	{
+		"bit":21,
+		"name":"USE_DES_KEY_ONLY",
+		"description":"(Windows 2000/Windows Server 2003) Restrict this principal to use only Data Encryption Standard (DES) encryption types for keys."
+	},
+	{
+		"bit":22,
+		"name":"DONT_REQ_PREAUTH",
+		"description":"(Windows 2000/Windows Server 2003) This account does not require Kerberos pre-authentication for logging on."
+	},
+	{
+		"bit":23,
+		"name":"PASSWORD_EXPIRED",
+		"description":"(Windows 2000/Windows Server 2003) The user's password has expired."
+	},
+	{
+		"bit":24,
+		"name":"TRUSTED_TO_AUTH_FOR_DELEGATION",
+		"description":"(Windows 2000/Windows Server 2003) The account is enabled for delegation."
+	}
+];
+</textarea><br/><input type="button" id="spec_apply" value="Apply" />
+<p>var <b>theField</b> = <i>Bitfield</i>(<b>bit_field_spec</b>);</p>
+<p>
+var <b>bitfield</b> = <i>theField</i>(<input type="text" id="bit_input" value="0"/>);&nbsp;<input type="button" id="bit_update" value="Update" />
+</p>
+<p>
+	<b>bitfield</b>.<i>toString</i>(16, 8);&nbsp;//= <span id="bit_hex"></span>
+</p>
+<p>
+	<b>bitfield</b>.<i>toString</i>(2, 32);&nbsp;//= <span id="bit_binary"></span>
+</p>
+<p>
+	<b>bitfield</b>.<i>has</i>("SCRIPT", "ACCOUNTDISABLE");&nbsp;//= <span id="bit_has"></span>
+</p>
+<p>
+	<b>bitfield</b>.<i>none</i>("SCRIPT", "ACCOUNTDISABLE");&nbsp;//= <span id="bit_none"></span>
+</p>
+<p>
+	<b>bitfield</b>.<i>only</i>("SCRIPT", "ACCOUNTDISABLE");&nbsp;//= <span id="bit_only"></span>
+</p>
+<h2>Table:</h2>
 <div id="bit_debug">
 </div>
 </body>

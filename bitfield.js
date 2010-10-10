@@ -71,6 +71,25 @@ Bitfield = function(configuration, bit_field, ignore_unknown_bits){
 		return number_of_bits;
 	};
 
+	var _getAllNames = function(){
+		var names = [];
+		var name;
+		for(name in name_to_bit){
+			if(name_to_bit.hasOwnProperty(name))
+				names.push(name);
+		}
+		return names.reverse();
+	};
+
+	var _getAllBits = function(){
+		var bits = [];
+		var i = bit_to_name.length;
+		while (--i >= 0) {
+			bits.push(i);
+		}
+		return bits.reverse();
+	};
+
 	var _getBitFromName = function(name) {
 		if (typeof name_to_bit[name] != "undefined" && name_to_bit[name] != null) {
 			return name_to_bit[name];
@@ -159,30 +178,68 @@ Bitfield = function(configuration, bit_field, ignore_unknown_bits){
 		bit_field.oldToString = bit_field.toString;
 		bit_field.toString = function(base, length) {
 			base = base || 10;
-			length = length || _getSize();
+			length = length || 0;
 			var str = bit_field.oldToString.call(bit_field, base);
-			if (base === 2) {
+			if (length > 0) {
 				for (var i = length - str.length; i > 0; i--)
 					str = "0" + str;
 			}
 			return str;
 		};
 
-
+		/* has - tests for the presence of one or more flags.
+		   returns true if they are all present or false if any are missing.
+		*/
 		bit_field.has = bit_field.isSet = function(name) {
 			if(arguments.length > 1){
 				name = Array.prototype.slice.call(arguments);
 			}
-			if(isArray(name)){
-				var i = name.length;
-				var local_bitfield = bit_field;
-				while(--i>=0){
-					local_bitfield = _getBit.call(local_bitfield, _getBitFromName(name[i]));
-				}
-				return local_bitfield? true : false;
-			} else {
-				return _getBit.call(bit_field, _getBitFromName(name))?true:false;
+			if(!isArray(name)){
+				name = [name];
 			}
+			var i = name.length;
+			while(--i>=0){
+				if(!_getBit.call(bit_field, _getBitFromName(name[i])))
+					return false;
+			}
+			return true;
+		};
+
+		/* none - tests for the presence of none of the flags.
+		   returns true only if none are present or false if any are set.
+		*/
+		bit_field.none = bit_field.notSet = function(name) {
+			if(arguments.length > 1){
+				name = Array.prototype.slice.call(arguments);
+			}
+			if(!isArray(name)){
+				name = [name];
+			}
+			var i = name.length;
+			while(--i>=0){
+				if(_getBit.call(bit_field, _getBitFromName(name[i])))
+					return false;
+			}
+			return true;
+		};
+
+		/* only - make sure only the specified flags are set
+		*/
+		bit_field.only = function(name) {
+			var flags = _getAllNames();
+
+			if(arguments.length > 1){
+				name = Array.prototype.slice.call(arguments);
+			}
+			if(!isArray(name)){
+				name = [name];
+			}
+			var i = name.length;
+			while(--i>=0){
+				var index = flags.indexOf(name[i]);
+				flags.splice(index, 1);
+			}
+			return  bit_field.has(name) && bit_field.none(flags);
 		};
 
 		bit_field.set = function(name) {
@@ -206,6 +263,14 @@ Bitfield = function(configuration, bit_field, ignore_unknown_bits){
 
 		bit_field.name = function(bit){
 			return _getNameFromBit(bit);
+		};
+
+		bit_field.flags = function(){
+			return _getAllNames();
+		};
+
+		bit_field.bits = function(){
+			return _getAllBits();
 		};
 
 		bit_field.description = function(bit){
@@ -233,6 +298,14 @@ Bitfield = function(configuration, bit_field, ignore_unknown_bits){
 
 		// Finally, return the decorated Number();
 		return bit_field;
+	};
+
+	BITFIELD.flags = function(){
+		return _getAllNames();
+	};
+
+	BITFIELD.bits = function(){
+		return _getAllBits();
 	};
 
 	if(inner_value !== null)
